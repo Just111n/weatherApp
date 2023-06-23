@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    tools:context=".WeatherCard"
+    android:orientation="vertical"
+    android:background="@color/purple_200"
+    android:backgroundTint="@color/teal_200"
+    android:layout_marginTop="20dp">
+
+
+
+    <TextView
+        android:id="@+id/locationTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"
+        android:padding="8dp"
+        android:text="@string/n_a" />
+
+
+
+    <TextView
+        android:id="@+id/maxTempTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"
+        android:padding="8dp"
+        android:text="@string/n_a" />
+
+    <TextView
+        android:id="@+id/tempTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"
+        android:padding="8dp"
+        android:text="@string/n_a" />
+
+
+
+    <TextView
+        android:id="@+id/minTempTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"
+        android:padding="8dp"
+        android:text="@string/n_a" />
+
+    <TextView
+        android:id="@+id/mainWeatherTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"
+        android:padding="8dp"
+        android:text="@string/n_a" />
+
+
+
+    <TextView
+        android:id="@+id/weatherDescTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="24sp"
+        android:padding="8dp"
+        android:text="@string/n_a" />
+
+</LinearLayout>

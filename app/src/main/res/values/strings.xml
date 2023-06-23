@@ -21,5 +21,12 @@
     <string name="default_time">DEFAULT TIME</string>
     <string name="coordinates">Coordinates:</string>
     <string name="real_time">Real Time</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="weather_description">Weather Description:</string>
+    <string name="main_weather">Main Weather:</string>
+    <string name="temperature">Temperature:</string>
+    <string name="min_temp">Min Temp:</string>
+    <string name="max_temp">Max Temp:</string>
 
 </resources>

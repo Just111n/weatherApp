@@ -59,30 +59,25 @@ public class Utils {
         return json;
     }
 
-    private static URL buildURL(String medName) {
-        String scheme = "https";
-        final String authority = "api.fda.gov";
-        final String path = "drug";
-        final String subPath = "label.json";
-        final String apiKey = "aMchNi8ksgXCpONFYXBszSboK641yncpEWPA7v8g";
-
-        Uri.Builder builder = new Uri.Builder();
-        builder.scheme(scheme)
-                .authority(authority)
-                .appendPath(path)
-                .appendPath(subPath)
-                .appendQueryParameter("api_key", apiKey)
-                .appendQueryParameter("search", "openfda.generic_name:" + Uri.encode(medName));
+    private static URL buildURL(double latitude, double longitude) {
+        final String apiKey = "936ce59a8d9cd81dd85d0f31b05815a9";
+        String baseUrl = "https://api.openweathermap.org/data/2.5/weather";
+        Uri.Builder builder = Uri.parse(baseUrl).buildUpon();
+        builder.appendQueryParameter("lat", String.valueOf(latitude))
+                .appendQueryParameter("lon", String.valueOf(longitude))
+                .appendQueryParameter("appid", apiKey);
         Uri uri = builder.build();
+
         URL url = null;
         try {
             url = new URL(uri.toString());
         } catch (MalformedURLException e) {
-            assert false;
+            e.printStackTrace();
         }
 
         return url;
     }
+
 
     static boolean isNetworkAvailable(Context context) {
         ConnectivityManager connectivityManager
@@ -91,10 +86,11 @@ public class Utils {
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
 
-    public static String getMedInfoFromApi(String medName) throws IOException, JSONException {
-        URL url = buildURL(medName);
+    public static String getWeatherInfoFromApi(double latitude, double longitude) throws IOException, JSONException {
+        URL url = buildURL(latitude, longitude);
         return getJson(url);
     }
+
 }
 
 

@@ -1,18 +1,20 @@
 package com.example.weatherapp;
 
+import java.text.DecimalFormat;
+
 public class WeatherModel {
     private String location;
-    private String temperature;
-    private String minTemperature;
-    private String maxTemperature;
+    private double temperature;
+    private double minTemperature;
+    private double maxTemperature;
     private String weatherDescription;
     private String weatherMain;
 
     private WeatherModel(Builder builder) {
         this.location = builder.location;
-        this.temperature = builder.temperature;
-        this.minTemperature = builder.minTemperature;
-        this.maxTemperature = builder.maxTemperature;
+        setTemperature(builder.temperature); // Convert Kelvin to Celsius
+        setMinTemperature(builder.minTemperature); // Convert Kelvin to Celsius
+        setMaxTemperature(builder.maxTemperature); // Convert Kelvin to Celsius
         this.weatherDescription = builder.weatherDescription;
         this.weatherMain = builder.weatherMain;
     }
@@ -25,16 +27,16 @@ public class WeatherModel {
         this.location = location;
     }
 
-    public void setTemperature(String temperature) {
-        this.temperature = temperature;
+    public void setTemperature(double temperature) {
+        this.temperature = kelvinToCelsius(temperature);
     }
 
-    public void setMinTemperature(String minTemperature) {
-        this.minTemperature = minTemperature;
+    public void setMinTemperature(double minTemperature) {
+        this.minTemperature = kelvinToCelsius(minTemperature);
     }
 
-    public void setMaxTemperature(String maxTemperature) {
-        this.maxTemperature = maxTemperature;
+    public void setMaxTemperature(double maxTemperature) {
+        this.maxTemperature = kelvinToCelsius(maxTemperature);
     }
 
     public void setWeatherDescription(String weatherDescription) {
@@ -45,15 +47,15 @@ public class WeatherModel {
         this.weatherMain = weatherMain;
     }
 
-    public String getTemperature() {
+    public double getTemperature() {
         return temperature;
     }
 
-    public String getMinTemperature() {
+    public double getMinTemperature() {
         return minTemperature;
     }
 
-    public String getMaxTemperature() {
+    public double getMaxTemperature() {
         return maxTemperature;
     }
 
@@ -67,9 +69,9 @@ public class WeatherModel {
 
     public static class Builder {
         private String location;
-        private String temperature;
-        private String minTemperature;
-        private String maxTemperature;
+        private double temperature;
+        private double minTemperature;
+        private double maxTemperature;
         private String weatherDescription;
         private String weatherMain;
 
@@ -78,17 +80,17 @@ public class WeatherModel {
             return this;
         }
 
-        public Builder setTemperature(String temperature) {
+        public Builder setTemperature(double temperature) {
             this.temperature = temperature;
             return this;
         }
 
-        public Builder setMinTemperature(String minTemperature) {
+        public Builder setMinTemperature(double minTemperature) {
             this.minTemperature = minTemperature;
             return this;
         }
 
-        public Builder setMaxTemperature(String maxTemperature) {
+        public Builder setMaxTemperature(double maxTemperature) {
             this.maxTemperature = maxTemperature;
             return this;
         }
@@ -106,5 +108,11 @@ public class WeatherModel {
         public WeatherModel build() {
             return new WeatherModel(this);
         }
+    }
+
+    public static double kelvinToCelsius(double kelvinTemperature) {
+        double celsius = kelvinTemperature - 273.15;
+        DecimalFormat decimalFormat = new DecimalFormat("#.#");
+        return Double.parseDouble(decimalFormat.format(celsius));
     }
 }

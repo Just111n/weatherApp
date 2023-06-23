@@ -36,6 +36,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private WeatherModel weather;
     private TextView mainWeatherTextView;
     private TextView weatherDescTextView;
+    private TextView tempTextView;
+
+    private TextView coordTextView;
+    TextView maxTempTextView;
+    TextView minTempTextView;
 
     final String ERROR_NO_NETWORK = "No Network";
     final String RESULTS = "results", ERROR = "error", CODE = "code", MESSAGE = "message";
@@ -47,10 +52,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        coordTextView = findViewById(R.id.coordinatesTextView);
         locationTextView = findViewById(R.id.locationTextView);
-        TextView maxTempTextView = findViewById(R.id.maxTempTextView);
-        TextView minTempTextView = findViewById(R.id.minTempTextView);
-        TextView tempTextView = findViewById(R.id.tempTextView);
+        maxTempTextView = findViewById(R.id.maxTempTextView);
+        minTempTextView = findViewById(R.id.minTempTextView);
+        tempTextView = findViewById(R.id.tempTextView);
         mainWeatherTextView = findViewById(R.id.mainWeatherTextView);
         weatherDescTextView = findViewById(R.id.weatherDescTextView);
 
@@ -61,17 +67,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
 
         weather = new WeatherModel.Builder()
-                .setTemperature("25°C")
-                .setMinTemperature("20°C")
-                .setMaxTemperature("30°C")
+                .setLocation("Middleof nowhere")
+                .setTemperature(555555)
+                .setMinTemperature(100)
+                .setMaxTemperature(999999)
                 .setWeatherDescription("LAVA IS FALLING")
                 .setWeatherMain("ASH IN THE SKY")
                 .build();
 
 
-        maxTempTextView.setText(weather.getMaxTemperature());
-        minTempTextView.setText(weather.getMinTemperature());
-        tempTextView.setText(weather.getTemperature());
+        maxTempTextView.setText(String.valueOf(weather.getMaxTemperature()));
+        minTempTextView.setText(String.valueOf(weather.getMinTemperature()));
+        tempTextView.setText(String.valueOf(weather.getTemperature()));
         mainWeatherTextView.setText(weather.getWeatherMain());
         weatherDescTextView.setText(weather.getWeatherDescription());
 
@@ -111,7 +118,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         double longitude = location.getLongitude();
 
         // Display the location in the TextView
-        locationTextView.setText("Location: " + latitude + ", " + longitude);
+        coordTextView.setText("Coordinates: " + latitude + ", " + longitude);
 
 
         String coordinates = String.format("%.6f, %.6f", latitude, longitude);
@@ -121,7 +128,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         Toast.makeText(this, weather.getLocation(), Toast.LENGTH_SHORT).show();
 
         if ( Utils.isNetworkAvailable(this)){
-            getWeatherInfo(latitude, longitude);
+            WeatherModel weather = getWeatherInfo(latitude, longitude);
+
+
         }else{
             Toast.makeText(this, ERROR_NO_NETWORK,
                     Toast.LENGTH_LONG).show();
@@ -144,12 +153,20 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         // Handle changes in the status of the location provider
     }
 
-    private void getWeatherInfo(double lat, double lon) {
+    private WeatherModel getWeatherInfo(double lat, double lon) {
+
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Handler handler = new Handler(Looper.getMainLooper());
 
+
+
+
         executor.execute(() -> {
             try {
+                String mainWeather = "";
+                String weatherDescription = "";
+
+
                 String jsonResult = Utils.getWeatherInfoFromApi(lat,lon);
                 if (jsonResult == null) {
                     handler.post(() -> Log.d(TAG, "JSON is Null"));
@@ -171,26 +188,45 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     JSONObject weatherObject = weatherArray.getJSONObject(0);
 
                     // Extract the weather details
-                    String mainWeather = weatherObject.getString("main");
-                    String weatherDescription = weatherObject.getString("description");
+                    mainWeather = weatherObject.getString("main");
+                    weatherDescription = weatherObject.getString("description");
 
-                    // Set the weather details to the respective TextViews
-                    handler.post(() -> {
-                        mainWeatherTextView.setText(mainWeather);
-                        weatherDescTextView.setText(weatherDescription);
-                    });
                 }
 
-                String purpose = getString(R.string.purpose_not_available);
+                // Get the main object
+                JSONObject mainObject = jsonObject.getJSONObject("main");
 
-//                if (firstResult.has("main")) {
-//                    Log.d(TAG,"if statement is running");
-//                    JSONArray purposeArray = firstResult.getJSONArray(INDICATIONS_AND_USAGE);
-//                    purpose = purposeArray.getString(0);
-//                }
+                // Extract the temperature details
+                double temperature = mainObject.getDouble("temp");
+                double minTemperature = mainObject.getDouble("temp_min");
+                double maxTemperature = mainObject.getDouble("temp_max");
 
-                String finalPurpose = purpose;
-                handler.post(() -> Log.d(TAG, finalPurpose));
+
+                // Get the location name
+                String locationName = jsonObject.getString("name");
+
+
+                 weather = new WeatherModel.Builder()
+                        .setLocation(locationName)
+                        .setTemperature(temperature)
+                        .setMinTemperature(minTemperature)
+                        .setMaxTemperature(maxTemperature)
+                        .setWeatherDescription(weatherDescription)
+                        .setWeatherMain(mainWeather)
+                        .build();
+
+                handler.post(() -> {
+                    mainWeatherTextView.setText(weather.getWeatherMain());
+                    weatherDescTextView.setText(weather.getWeatherDescription());
+                    tempTextView.setText(String.valueOf(weather.getTemperature()));
+                    minTempTextView.setText(String.valueOf(weather.getMinTemperature()));
+                    maxTempTextView.setText(String.valueOf(weather.getMaxTemperature()));
+                    locationTextView.setText(weather.getLocation());
+                });
+
+
+
+
 
             } catch (IOException e) {
                 e.printStackTrace();
@@ -199,6 +235,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 throw new RuntimeException(e);
             }
         });
+
+        return weather;
     }
 
 

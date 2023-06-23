@@ -13,7 +13,7 @@ The Weather Forecast App is a simple application that displays the current weath
 
 ## API Key
 
-To use the OpenWeatherMap API, you need to obtain an API key. You can sign up for a free API key at [OpenWeatherMap](http://openweathermap.org/API) and replace `<YOUR_API_KEY>` with your actual API key in the code.
+To use the OpenWeatherMap API, you need to obtain an API key. You can sign up for a free API key at [OpenWeatherMap](http://openweathermap.org/API) and replace `<YOUR_API_KEY>` in Utils.js with your actual API key in the code.
 
 ## Predefined Cities (KIV)
 

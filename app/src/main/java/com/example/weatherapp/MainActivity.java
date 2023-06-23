@@ -116,19 +116,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         // Handle location updates here
         double latitude = location.getLatitude();
         double longitude = location.getLongitude();
+        WeatherModel weather;
 
         // Display the location in the TextView
         coordTextView.setText("Coordinates: " + latitude + ", " + longitude);
 
 
-        String coordinates = String.format("%.6f, %.6f", latitude, longitude);
-
-
-        weather.setLocation(coordinates);
-        Toast.makeText(this, weather.getLocation(), Toast.LENGTH_SHORT).show();
-
         if ( Utils.isNetworkAvailable(this)){
-            WeatherModel weather = getWeatherInfo(latitude, longitude);
+            weather = getWeatherInfo(latitude, longitude);
 
 
         }else{

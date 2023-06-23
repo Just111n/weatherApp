@@ -3,6 +3,7 @@ package com.example.weatherapp;
 import static com.example.weatherapp.Utils.kelvinToCelsius;
 
 
+// Builder Design Pattern
 public class WeatherModel {
     private String location;
     private double temperature;
@@ -13,9 +14,9 @@ public class WeatherModel {
 
     private WeatherModel(Builder builder) {
         this.location = builder.location;
-        setTemperature(builder.temperature); // Convert Kelvin to Celsius
-        setMinTemperature(builder.minTemperature); // Convert Kelvin to Celsius
-        setMaxTemperature(builder.maxTemperature); // Convert Kelvin to Celsius
+        this.temperature = builder.temperature;
+        this.minTemperature = builder.minTemperature;
+        this.maxTemperature = builder.maxTemperature ;
         this.weatherDescription = builder.weatherDescription;
         this.weatherMain = builder.weatherMain;
     }
@@ -29,15 +30,15 @@ public class WeatherModel {
     }
 
     public void setTemperature(double temperature) {
-        this.temperature = kelvinToCelsius(temperature);
+        this.temperature = temperature;
     }
 
     public void setMinTemperature(double minTemperature) {
-        this.minTemperature = kelvinToCelsius(minTemperature);
+        this.minTemperature = minTemperature;
     }
 
     public void setMaxTemperature(double maxTemperature) {
-        this.maxTemperature = kelvinToCelsius(maxTemperature);
+        this.maxTemperature = maxTemperature;
     }
 
     public void setWeatherDescription(String weatherDescription) {
@@ -82,17 +83,17 @@ public class WeatherModel {
         }
 
         public Builder setTemperature(double temperature) {
-            this.temperature = temperature;
+            this.temperature = kelvinToCelsius(temperature);
             return this;
         }
 
         public Builder setMinTemperature(double minTemperature) {
-            this.minTemperature = minTemperature;
+            this.minTemperature = kelvinToCelsius(minTemperature);
             return this;
         }
 
         public Builder setMaxTemperature(double maxTemperature) {
-            this.maxTemperature = maxTemperature;
+            this.maxTemperature = kelvinToCelsius(maxTemperature);
             return this;
         }
 

@@ -17,8 +17,12 @@ import java.net.URL;
 import java.text.DecimalFormat;
 
 public class Utils {
-
+    private static final String apiKey = "936ce59a8d9cd81dd85d0f31b05815a9";
+    private static final String baseUrl = "https://api.openweathermap.org/data/2.5/weather";
     private static final String GET = "GET";
+    private static final String lat = "lat";
+    private static final String lon = "lon";
+    private static final String appid = "appid";
 
     private static InputStream getInputStream (URL url) {
         HttpURLConnection urlConnection;
@@ -61,12 +65,12 @@ public class Utils {
     }
 
     private static URL buildURL(double latitude, double longitude) {
-        final String apiKey = "936ce59a8d9cd81dd85d0f31b05815a9";
-        String baseUrl = "https://api.openweathermap.org/data/2.5/weather";
+
+
         Uri.Builder builder = Uri.parse(baseUrl).buildUpon();
-        builder.appendQueryParameter("lat", String.valueOf(latitude))
-                .appendQueryParameter("lon", String.valueOf(longitude))
-                .appendQueryParameter("appid", apiKey);
+        builder.appendQueryParameter(lat, String.valueOf(latitude))
+                .appendQueryParameter(lon, String.valueOf(longitude))
+                .appendQueryParameter(appid, apiKey);
         Uri uri = builder.build();
 
         URL url = null;

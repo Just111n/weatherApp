@@ -20,6 +20,20 @@
             android:layout_height="wrap_content"
             android:textSize="20sp"
             android:padding="8dp"
+            android:text="@string/coordinates" />
+        <TextView
+            android:id="@+id/latTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="20sp"
+            android:padding="8dp"
+            android:text="@string/n_a" />
+        <TextView
+            android:id="@+id/lonTextView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="20sp"
+            android:padding="8dp"
             android:text="@string/n_a" />
 
         <TextView

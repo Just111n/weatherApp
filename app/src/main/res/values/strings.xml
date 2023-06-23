@@ -20,5 +20,6 @@
     <string name="n_a">N/A</string>
     <string name="default_time">DEFAULT TIME</string>
     <string name="coordinates">Coordinates:</string>
+    <string name="real_time">Real Time</string>
 
 </resources>

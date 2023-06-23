@@ -7,13 +7,11 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.nfc.Tag;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.widget.TextView;
-import android.widget.TimePicker;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -24,40 +22,35 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.text.BreakIterator;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Logger;
 
 
 public class MainActivity extends AppCompatActivity implements LocationListener {
 
     private static final String TAG = "WEATHERTEST";
-    private static final String JSON_KEY = "JSON_KEY" ;
-    private static final String TIME_UPDATED_KEY = "TIME_UPDATED_KEY" ;
-    private SharedPreferences mPreferences;
+    private static final String JSON_KEY = "JSON_KEY";
+    private static final String TIME_UPDATED_KEY = "TIME_UPDATED_KEY";
     private final String PREFERENCES_FILE_KEY = "com.example.android.mainsharedprefs";
-    public static final String RATE_KEY = "Rate_Key";
+
+    private SharedPreferences mPreferences;
 
     private LocationManager locationManager;
     private TextView locationTextView;
-
     private TextView timeUpdatedTextView;
-
-    private WeatherModel weather;
     private TextView mainWeatherTextView;
     private TextView weatherDescTextView;
     private TextView tempTextView;
-
-    private TextView coordTextView;
-    TextView maxTempTextView;
-    TextView minTempTextView;
+    private TextView latTextView,lonTextView;
+    private TextView maxTempTextView;
+    private TextView minTempTextView;
 
     final String ERROR_NO_NETWORK = "No Network";
-    final String RESULTS = "results", ERROR = "error", CODE = "code", MESSAGE = "message";
+    final String ERROR = "error";
+    final String MESSAGE = "message";
 
 
 
@@ -67,9 +60,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         setContentView(R.layout.activity_main);
 
         mPreferences = getSharedPreferences(PREFERENCES_FILE_KEY, Context.MODE_PRIVATE);
+        // Initialize the LocationManager
+        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
         timeUpdatedTextView = findViewById(R.id.timeTextView);
-        coordTextView = findViewById(R.id.coordinatesTextView);
+        latTextView = findViewById(R.id.latTextView);
+        lonTextView = findViewById(R.id.lonTextView);
         locationTextView = findViewById(R.id.locationTextView);
         maxTempTextView = findViewById(R.id.maxTempTextView);
         minTempTextView = findViewById(R.id.minTempTextView);
@@ -77,10 +73,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         mainWeatherTextView = findViewById(R.id.mainWeatherTextView);
         weatherDescTextView = findViewById(R.id.weatherDescTextView);
 
-
-        // Initialize the LocationManager
-        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-
+        Log.d(TAG,"onCreate started");
     }
 
     @Override
@@ -96,6 +89,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             // Request location permissions
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 1);
         }
+
+        Log.d(TAG,"onResume");
     }
 
     @Override
@@ -105,52 +100,32 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         // Remove location updates
         locationManager.removeUpdates(this);
 
-
-        // TODO store when exit app
-        SharedPreferences.Editor preferencesEditor = mPreferences.edit();
-        preferencesEditor.putString(RATE_KEY, weather.getLocation()).toString();
-        preferencesEditor.apply();
+        Log.d(TAG,"onPause");
     }
 
     @Override
     public void onLocationChanged(Location location) {
-        // Handle location updates here
+
+        // Get current location coordinates
         double latitude = location.getLatitude();
         double longitude = location.getLongitude();
-        WeatherModel weather;
 
-        // Display the location in the TextView
-        coordTextView.setText("Coordinates: " + latitude + ", " + longitude);
+        // Display Coordinates
+        displayCoord(latitude,longitude);
 
 
         if ( Utils.isNetworkAvailable(this)){
-            weather = getWeatherInfo(latitude, longitude);
-            timeUpdatedTextView.setText("Real Time");
 
+            timeUpdatedTextView.setText(R.string.real_time);
+            fetchWeatherInfo(latitude, longitude);
 
         }else{
-
-            // TODO store time when network is removed
             Toast.makeText(this, ERROR_NO_NETWORK,
                     Toast.LENGTH_LONG).show();
+            Log.d(TAG,"onLocationChanged, no network");
 
-            mPreferences = getSharedPreferences(PREFERENCES_FILE_KEY, Context.MODE_PRIVATE);
-            String jsonStored = mPreferences.getString(JSON_KEY,
-                    getString(R.string.default_json_string));
-            String timeStored = mPreferences.getString(TIME_UPDATED_KEY,
-                    getString(R.string.default_time));
-            timeUpdatedTextView.setText(timeStored);
-
-            /*** app is already been used, or app is used for the first time **/
-            Log.d(TAG,"no network");
-            try {
-                WeatherModel weatherStored = getWeatherInfo(jsonStored);
-            } catch (JSONException e) {
-                throw new RuntimeException(e);
-            }
-
+            loadStoredData();
         }
-
     }
 
     @Override
@@ -168,156 +143,123 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         // Handle changes in the status of the location provider
     }
 
-    private WeatherModel getWeatherInfo(double lat, double lon) {
+    private void setWeatherData(WeatherModel weather) {
+        weatherDescTextView.setText(weather.getWeatherDescription());
+        tempTextView.setText(String.valueOf(weather.getTemperature()));
+        minTempTextView.setText(String.valueOf(weather.getMinTemperature()));
+        maxTempTextView.setText(String.valueOf(weather.getMaxTemperature()));
+        mainWeatherTextView.setText(weather.getWeatherMain());
+        locationTextView.setText(weather.getLocation());
+    }
 
+    private void fetchWeatherInfo(double lat, double lon) {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Handler handler = new Handler(Looper.getMainLooper());
 
-
-
-
         executor.execute(() -> {
             try {
-                String mainWeather = "";
-                String weatherDescription = "";
-
-
-                String jsonResult = Utils.getWeatherInfoFromApi(lat,lon);
+                String jsonResult = Utils.getWeatherInfoFromApi(lat, lon);
                 if (jsonResult == null) {
-                    handler.post(() -> Log.d(TAG, "JSON is Null"));
+                    handler.post(() -> Log.d(TAG, "JSON is null"));
                     return;
                 }
+
                 JSONObject jsonObject = new JSONObject(jsonResult);
+
                 if (jsonObject.has(ERROR)) {
                     JSONObject errorObject = jsonObject.getJSONObject(ERROR);
-                    String errorCode = errorObject.getString(CODE);
                     String errorMessage = errorObject.getString(MESSAGE);
-                    Toast.makeText(MainActivity.this, "error Message:" + errorMessage, Toast.LENGTH_SHORT).show();
+                    handler.post(() ->
+                            Toast.makeText(MainActivity.this, "Error Message: " + errorMessage, Toast.LENGTH_SHORT).show());
                     return;
                 }
 
-                // Get the weather array
-                JSONArray weatherArray = jsonObject.getJSONArray("weather");
-                if (weatherArray.length() > 0) {
-                    // Get the first weather object
-                    JSONObject weatherObject = weatherArray.getJSONObject(0);
-
-                    // Extract the weather details
-                    mainWeather = weatherObject.getString("main");
-                    weatherDescription = weatherObject.getString("description");
-
-                }
-
-                // Get the main object
-                JSONObject mainObject = jsonObject.getJSONObject("main");
-
-                // Extract the temperature details
-                double temperature = mainObject.getDouble("temp");
-                double minTemperature = mainObject.getDouble("temp_min");
-                double maxTemperature = mainObject.getDouble("temp_max");
-
-
-                // Get the location name
-                String locationName = jsonObject.getString("name");
-
-
-                 weather = new WeatherModel.Builder()
-                        .setLocation(locationName)
-                        .setTemperature(temperature)
-                        .setMinTemperature(minTemperature)
-                        .setMaxTemperature(maxTemperature)
-                        .setWeatherDescription(weatherDescription)
-                        .setWeatherMain(mainWeather)
-                        .build();
+                WeatherModel weather = parseWeatherJson(jsonObject);
 
                 handler.post(() -> {
-                    mainWeatherTextView.setText(weather.getWeatherMain());
-                    weatherDescTextView.setText(weather.getWeatherDescription());
-                    tempTextView.setText(String.valueOf(weather.getTemperature()));
-                    minTempTextView.setText(String.valueOf(weather.getMinTemperature()));
-                    maxTempTextView.setText(String.valueOf(weather.getMaxTemperature()));
-                    locationTextView.setText(weather.getLocation());
+                    setWeatherData(weather);
+                    storeWeatherData(jsonResult);
                 });
-
-                // storing json whenever location changes
-                SharedPreferences.Editor preferencesEditor = mPreferences.edit();
-                preferencesEditor.putString(JSON_KEY,jsonResult);
-
-
-                Calendar calendar = Calendar.getInstance();
-                SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy HH:mm");
-                String date = dateFormat.format(calendar.getTime());
-                preferencesEditor.putString(TIME_UPDATED_KEY,date);
-                preferencesEditor.apply();
-
-
-
-
-
             } catch (IOException e) {
                 e.printStackTrace();
-                handler.post(() -> Log.d(TAG, "catch"));
+                handler.post(() -> Log.d(TAG, "IOException occurred"));
             } catch (JSONException e) {
-                throw new RuntimeException(e);
+                e.printStackTrace();
+                handler.post(() -> Log.d(TAG, "JSONException occurred"));
             }
         });
-
-        return weather;
     }
 
-    private WeatherModel getWeatherInfo(String jsonString) throws JSONException {
+    private WeatherModel parseWeatherJson(JSONObject jsonObject) throws JSONException {
+        // Parse weather data from the JSON object and return a WeatherModel object
+        String mainWeather = "";
+        String weatherDescription = "";
 
-            String mainWeather = "";
-            String weatherDescription = "";
+        JSONArray weatherArray = jsonObject.getJSONArray("weather");
+        if (weatherArray.length() > 0) {
+            JSONObject weatherObject = weatherArray.getJSONObject(0);
+            mainWeather = weatherObject.getString("main");
+            weatherDescription = weatherObject.getString("description");
+        }
 
+        JSONObject mainObject = jsonObject.getJSONObject("main");
+        double temperature = mainObject.getDouble("temp");
+        double minTemperature = mainObject.getDouble("temp_min");
+        double maxTemperature = mainObject.getDouble("temp_max");
 
-            JSONObject jsonObject = new JSONObject(jsonString);
+        String locationName = jsonObject.getString("name");
 
-
-            // Get the weather array
-            JSONArray weatherArray = jsonObject.getJSONArray("weather");
-            if (weatherArray.length() > 0) {
-                // Get the first weather object
-                JSONObject weatherObject = weatherArray.getJSONObject(0);
-
-                // Extract the weather details
-                mainWeather = weatherObject.getString("main");
-                weatherDescription = weatherObject.getString("description");
-
-            }
-
-            // Get the main object
-            JSONObject mainObject = jsonObject.getJSONObject("main");
-
-            // Extract the temperature details
-            double temperature = mainObject.getDouble("temp");
-            double minTemperature = mainObject.getDouble("temp_min");
-            double maxTemperature = mainObject.getDouble("temp_max");
-
-
-            // Get the location name
-            String locationName = jsonObject.getString("name");
-
-
-            weather = new WeatherModel.Builder()
-                    .setLocation(locationName)
-                    .setTemperature(temperature)
-                    .setMinTemperature(minTemperature)
-                    .setMaxTemperature(maxTemperature)
-                    .setWeatherDescription(weatherDescription)
-                    .setWeatherMain(mainWeather)
-                    .build();
-
-
-                mainWeatherTextView.setText(weather.getWeatherMain());
-                weatherDescTextView.setText(weather.getWeatherDescription());
-                tempTextView.setText(String.valueOf(weather.getTemperature()));
-                minTempTextView.setText(String.valueOf(weather.getMinTemperature()));
-                maxTempTextView.setText(String.valueOf(weather.getMaxTemperature()));
-                locationTextView.setText(weather.getLocation());
-
-        return weather;
+        return new WeatherModel.Builder()
+                .setLocation(locationName)
+                .setTemperature(temperature)
+                .setMinTemperature(minTemperature)
+                .setMaxTemperature(maxTemperature)
+                .setWeatherDescription(weatherDescription)
+                .setWeatherMain(mainWeather)
+                .build();
     }
+
+    private void storeWeatherData(String jsonResult) {
+
+        SharedPreferences.Editor preferencesEditor = mPreferences.edit();
+        preferencesEditor.putString(JSON_KEY, jsonResult);
+
+
+        Calendar calendar = Calendar.getInstance();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy HH:mm", Locale.getDefault());
+        String date = dateFormat.format(calendar.getTime());
+        preferencesEditor.putString(TIME_UPDATED_KEY, date);
+        preferencesEditor.apply();
+
+        Log.d(TAG,"store weather data method ");
+        Log.d(TAG,"json and time is being saved ");
+    }
+
+    private void displayCoord(double lat, double lon) {
+
+        latTextView.setText(String.valueOf(lat));
+        lonTextView.setText(String.valueOf(lon));
+    }
+
+
+    private void loadStoredData() {
+        mPreferences = getSharedPreferences(PREFERENCES_FILE_KEY, Context.MODE_PRIVATE);
+        String timeStored = mPreferences.getString(TIME_UPDATED_KEY, getString(R.string.default_time));
+        String jsonStored = mPreferences.getString(JSON_KEY, getString(R.string.default_json_string));
+
+        timeUpdatedTextView.setText(timeStored);
+
+        try {
+            JSONObject jsonObject = new JSONObject(jsonStored);
+            WeatherModel weatherStored = parseWeatherJson(jsonObject);
+            setWeatherData(weatherStored);
+        } catch (JSONException e) {
+            Log.d(TAG, "Unable to read jsonStored");
+        }
+    }
+
+
+
 
 
 

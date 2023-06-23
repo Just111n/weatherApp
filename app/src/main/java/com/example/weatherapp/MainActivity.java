@@ -1,15 +1,19 @@
 package com.example.weatherapp;
 
 import android.Manifest;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.nfc.Tag;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,6 +25,9 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.text.BreakIterator;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
@@ -28,10 +35,17 @@ import java.util.logging.Logger;
 
 public class MainActivity extends AppCompatActivity implements LocationListener {
 
-    private static final String TAG = "YourClass";
+    private static final String TAG = "WEATHERTEST";
+    private static final String JSON_KEY = "JSON_KEY" ;
+    private static final String TIME_UPDATED_KEY = "TIME_UPDATED_KEY" ;
+    private SharedPreferences mPreferences;
+    private final String PREFERENCES_FILE_KEY = "com.example.android.mainsharedprefs";
+    public static final String RATE_KEY = "Rate_Key";
 
     private LocationManager locationManager;
     private TextView locationTextView;
+
+    private TextView timeUpdatedTextView;
 
     private WeatherModel weather;
     private TextView mainWeatherTextView;
@@ -44,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
     final String ERROR_NO_NETWORK = "No Network";
     final String RESULTS = "results", ERROR = "error", CODE = "code", MESSAGE = "message";
-    final String INDICATIONS_AND_USAGE = "indications_and_usage";
+
 
 
     @Override
@@ -52,6 +66,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mPreferences = getSharedPreferences(PREFERENCES_FILE_KEY, Context.MODE_PRIVATE);
+
+        timeUpdatedTextView = findViewById(R.id.timeTextView);
         coordTextView = findViewById(R.id.coordinatesTextView);
         locationTextView = findViewById(R.id.locationTextView);
         maxTempTextView = findViewById(R.id.maxTempTextView);
@@ -63,28 +80,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         // Initialize the LocationManager
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-
-
-
-        weather = new WeatherModel.Builder()
-                .setLocation("Middleof nowhere")
-                .setTemperature(555555)
-                .setMinTemperature(100)
-                .setMaxTemperature(999999)
-                .setWeatherDescription("LAVA IS FALLING")
-                .setWeatherMain("ASH IN THE SKY")
-                .build();
-
-
-        maxTempTextView.setText(String.valueOf(weather.getMaxTemperature()));
-        minTempTextView.setText(String.valueOf(weather.getMinTemperature()));
-        tempTextView.setText(String.valueOf(weather.getTemperature()));
-        mainWeatherTextView.setText(weather.getWeatherMain());
-        weatherDescTextView.setText(weather.getWeatherDescription());
-
-
-
-
 
     }
 
@@ -109,6 +104,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         // Remove location updates
         locationManager.removeUpdates(this);
+
+
+        // TODO store when exit app
+        SharedPreferences.Editor preferencesEditor = mPreferences.edit();
+        preferencesEditor.putString(RATE_KEY, weather.getLocation()).toString();
+        preferencesEditor.apply();
     }
 
     @Override
@@ -124,11 +125,30 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         if ( Utils.isNetworkAvailable(this)){
             weather = getWeatherInfo(latitude, longitude);
+            timeUpdatedTextView.setText("Real Time");
 
 
         }else{
+
+            // TODO store time when network is removed
             Toast.makeText(this, ERROR_NO_NETWORK,
                     Toast.LENGTH_LONG).show();
+
+            mPreferences = getSharedPreferences(PREFERENCES_FILE_KEY, Context.MODE_PRIVATE);
+            String jsonStored = mPreferences.getString(JSON_KEY,
+                    getString(R.string.default_json_string));
+            String timeStored = mPreferences.getString(TIME_UPDATED_KEY,
+                    getString(R.string.default_time));
+            timeUpdatedTextView.setText(timeStored);
+
+            /*** app is already been used, or app is used for the first time **/
+            Log.d(TAG,"no network");
+            try {
+                WeatherModel weatherStored = getWeatherInfo(jsonStored);
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
+
         }
 
     }
@@ -219,6 +239,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     locationTextView.setText(weather.getLocation());
                 });
 
+                // storing json whenever location changes
+                SharedPreferences.Editor preferencesEditor = mPreferences.edit();
+                preferencesEditor.putString(JSON_KEY,jsonResult);
+
+
+                Calendar calendar = Calendar.getInstance();
+                SimpleDateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy HH:mm");
+                String date = dateFormat.format(calendar.getTime());
+                preferencesEditor.putString(TIME_UPDATED_KEY,date);
+                preferencesEditor.apply();
+
 
 
 
@@ -233,6 +264,67 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         return weather;
     }
+
+    private WeatherModel getWeatherInfo(String jsonString) throws JSONException {
+
+            String mainWeather = "";
+            String weatherDescription = "";
+
+
+            JSONObject jsonObject = new JSONObject(jsonString);
+
+
+            // Get the weather array
+            JSONArray weatherArray = jsonObject.getJSONArray("weather");
+            if (weatherArray.length() > 0) {
+                // Get the first weather object
+                JSONObject weatherObject = weatherArray.getJSONObject(0);
+
+                // Extract the weather details
+                mainWeather = weatherObject.getString("main");
+                weatherDescription = weatherObject.getString("description");
+
+            }
+
+            // Get the main object
+            JSONObject mainObject = jsonObject.getJSONObject("main");
+
+            // Extract the temperature details
+            double temperature = mainObject.getDouble("temp");
+            double minTemperature = mainObject.getDouble("temp_min");
+            double maxTemperature = mainObject.getDouble("temp_max");
+
+
+            // Get the location name
+            String locationName = jsonObject.getString("name");
+
+
+            weather = new WeatherModel.Builder()
+                    .setLocation(locationName)
+                    .setTemperature(temperature)
+                    .setMinTemperature(minTemperature)
+                    .setMaxTemperature(maxTemperature)
+                    .setWeatherDescription(weatherDescription)
+                    .setWeatherMain(mainWeather)
+                    .build();
+
+
+                mainWeatherTextView.setText(weather.getWeatherMain());
+                weatherDescTextView.setText(weather.getWeatherDescription());
+                tempTextView.setText(String.valueOf(weather.getTemperature()));
+                minTempTextView.setText(String.valueOf(weather.getMinTemperature()));
+                maxTempTextView.setText(String.valueOf(weather.getMaxTemperature()));
+                locationTextView.setText(weather.getLocation());
+
+        return weather;
+    }
+
+
+
+
+
+
+
 
 
 

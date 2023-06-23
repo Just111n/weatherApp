@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.DecimalFormat;
 
 public class Utils {
 
@@ -89,6 +90,13 @@ public class Utils {
     public static String getWeatherInfoFromApi(double latitude, double longitude) throws IOException, JSONException {
         URL url = buildURL(latitude, longitude);
         return getJson(url);
+    }
+
+
+    public static double kelvinToCelsius(double kelvinTemperature) {
+        double celsius = kelvinTemperature - 273.15;
+        DecimalFormat decimalFormat = new DecimalFormat("#.#");
+        return Double.parseDouble(decimalFormat.format(celsius));
     }
 
 }

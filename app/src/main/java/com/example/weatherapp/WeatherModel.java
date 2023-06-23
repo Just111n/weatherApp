@@ -1,6 +1,7 @@
 package com.example.weatherapp;
 
-import java.text.DecimalFormat;
+import static com.example.weatherapp.Utils.kelvinToCelsius;
+
 
 public class WeatherModel {
     private String location;
@@ -110,9 +111,5 @@ public class WeatherModel {
         }
     }
 
-    public static double kelvinToCelsius(double kelvinTemperature) {
-        double celsius = kelvinTemperature - 273.15;
-        DecimalFormat decimalFormat = new DecimalFormat("#.#");
-        return Double.parseDouble(decimalFormat.format(celsius));
-    }
+
 }

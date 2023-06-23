@@ -17,7 +17,7 @@ import java.net.URL;
 import java.text.DecimalFormat;
 
 public class Utils {
-    private static final String apiKey = "936ce59a8d9cd81dd85d0f31b05815a9";
+    private static final String apiKey = "<YOUR_API_KEY>";
     private static final String baseUrl = "https://api.openweathermap.org/data/2.5/weather";
     private static final String GET = "GET";
     private static final String lat = "lat";
